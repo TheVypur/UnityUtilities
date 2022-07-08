@@ -10,7 +10,6 @@ public class SmoothFollow : MonoBehaviour
     public float controllerSpeed = 7;
 
     public Transform target;
-
     public Transform pivot;
     public Transform camTrans;
 
@@ -31,13 +30,15 @@ public class SmoothFollow : MonoBehaviour
     public float fPivotDampening = 0.2f;
     private Vector3 v3PivotOffset;
     public Vector3 v3PivotOffsetTarget;
-    private Vector3 v3BasePivotOffset;
-
+    public Vector3 v3BasePivotOffset = Vector3.zero;
     public Vector3 v3FollowOffset = new Vector3(0, 1, 0);
 
     public float fScrollSensitivity = 0.1f;
 
     private Vector3 v3DesiredPivotOffset = new Vector3(0, 0, 0);
+
+    public bool bFollowLeftShoulder = true;
+    public float fShoulderFollowOffset = 1.5f;
 
     // Start is called before the first frame update
     void Start()
@@ -61,7 +62,7 @@ public class SmoothFollow : MonoBehaviour
         v3DesiredPivotOffset += (v3DesiredPivotOffset * -fMouseScroll);
     }
 
-    void HandleRotation(float delta, float vertical, float horizontal, float targetSpeed)
+    void HandleRotation(float delta, float horizontal, float vertical, float targetSpeed)
     {
         if (turnSmoothing > 0)
         {
@@ -83,6 +84,14 @@ public class SmoothFollow : MonoBehaviour
 
         v3PivotOffset = pivot.localPosition;
 
+        if (bFollowLeftShoulder)
+        {
+            v3PivotOffsetTarget.x = -fShoulderFollowOffset;
+        }
+        else
+        {
+            v3PivotOffsetTarget.x = fShoulderFollowOffset;
+        }
         Vector3 v3TargetPos = HandleCollision(v3PivotOffsetTarget);
         pivot.localPosition += (v3TargetPos - v3PivotOffset) * fPivotDampening;
     }
@@ -95,21 +104,9 @@ public class SmoothFollow : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float inputX = Input.GetAxis("Mouse Y") * mouseSpeed;
-        float inputY = Input.GetAxis("Mouse X") * mouseSpeed;
-
+        float inputX = Input.GetAxis("Mouse X") * mouseSpeed;
+        float inputY = Input.GetAxis("Mouse Y") * mouseSpeed;
         float inputScroll = Input.mouseScrollDelta.y * fScrollSensitivity;
-
-        /*
-        float c_h = Input.GetAxis("RightAxis X");
-        float c_v = Input.GetAxis("RightAxis Y");
-
-        if (c_h != 0 || c_v != 0)
-        {
-            inputX = c_h;
-            inputY = c_v;
-        }
-        */
 
         FollowTarget(inputScroll, Time.deltaTime);
         HandleRotation(Time.deltaTime, inputX, inputY, controllerSpeed);
@@ -119,11 +116,13 @@ public class SmoothFollow : MonoBehaviour
     {
         RaycastHit hitInfo;
         Vector3 v3DestinationPoint = this.transform.position;
+
+        v3OriginalTarget += v3BasePivotOffset;
+
         v3DestinationPoint += this.transform.forward * v3OriginalTarget.z;
         v3DestinationPoint += this.transform.right * v3OriginalTarget.x;
         v3DestinationPoint += this.transform.up * v3OriginalTarget.y;
 
-        
         if (Physics.Linecast(this.transform.position, v3DestinationPoint, out hitInfo, layerMask, QueryTriggerInteraction.Ignore))
         {
             Vector3 v3Ret = hitInfo.point;
